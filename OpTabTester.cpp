@@ -11,7 +11,7 @@ int main(){
 	string  opcodeExample;
 	pair<string, string> opData;
 	
-	while(opcodeExample.compare("exit")){
+	while(opcodeExample.compare("exit") != 0){
 		
 		cout << "enter opcode: ";
 		cin >> opcodeExample;
