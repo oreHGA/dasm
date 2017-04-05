@@ -1,4 +1,4 @@
-#include "OpTabB.h"
+#include "OpTab.h"
 #include <string>
 #include <map>
 #include <iostream>
@@ -17,13 +17,16 @@ int main(){
 		cin >> opcodeExample;
 		cout << endl;
 		
+		cout << "in table?: " << boolalpha << optableInstance.isInTable(opcodeExample) << endl;
+		
 		opData = optableInstance.getInstr(opcodeExample);
 		
+		
 		cout << "mnemonic: " << opData.first << endl;
-		cout << "format: "<< opData.second << endl 
-		<< endl << "**********" << endl;
+		cout << "format: "<< opData.second << endl;
+		//cout << "table size: " << optableInstance.tableSize()	
+		cout << endl << "**********" << endl;
 	};
 
-	
 	return 0;
 }

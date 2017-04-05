@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-c -Wall
 LDFLAGS=
-SOURCES=OpTabB.cpp OpTabTester.cpp
+SOURCES=OpTab.cpp OpTabTester.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=OPTAB
 

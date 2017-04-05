@@ -11,15 +11,23 @@ class OpTab{
 		OpTab();
 		
 		struct instr{
-			string mnemonic;
-			string format;
+			string opcode;
+			struct data{
+				string mnemonic;
+				string format;
+			} data;
 		};
 		
-		static const instr insTab[2];
+		static const instr insTab[59];
 		
 		pair<string, string> getInstr(string op);
+		bool isInTable(string op);
+		
+		//for testing purposes only
+		int tableSize();
 		
 	private:
-		map<string, instr> mapTab;	
+		map<string, struct instr::data> mapTab;
+	
 };	
 #endif
