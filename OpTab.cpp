@@ -92,13 +92,11 @@ pair<string, string> OpTab::getInstr(string op){
 	instr i;
 	if (this->isInTable(op)){
 		i.data = mapTab.at(op);
+		dataPair = std::make_pair(i.data.mnemonic, i.data.format);
 	}
 	else{
-		cout << "ERROR: opcode not found; invalid for SIC/XE architecture." << endl;
+		dataPair = std::make_pair("NOT FOUND","NOT FOUND");
 	}
-		
-	dataPair = std::make_pair(i.data.mnemonic, i.data.format);
-
 	return dataPair;	
 }
 
