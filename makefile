@@ -1,9 +1,9 @@
 CC=g++
 CFLAGS=-c -Wall
 LDFLAGS=
-SOURCES=OpTab.cpp OpTabTester.cpp
+SOURCES=OpTab.cpp dasm_main.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=OPTAB
+EXECUTABLE=dasm
 
 all: $(SOURCES) $(EXECUTABLE)
 	
@@ -12,5 +12,3 @@ $(EXECUTABLE): $(OBJECTS)
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
-
-

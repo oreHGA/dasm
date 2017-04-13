@@ -3,6 +3,9 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <map>
+#include "OpTab.h"
+
 using namespace std;
 
 int char_to_int(char val){
@@ -98,6 +101,7 @@ int main(int argc,char *argv[]){
             // now that we can open the files , its time for business
             string line;
             ofstream result_file;
+            stringstream result_line;
             while(getline(object_file,line)){
                 // cout<<line<< "\n";
                 // now we gonna process each line one by one 
@@ -106,12 +110,20 @@ int main(int argc,char *argv[]){
                 while (i<length){
                     if(line.at(i) == 'H' ){
                         // we are in the header record now
-                        // 
                         // cout<<"Header\n";
                         // next thing is to read the next 6 characters
                         string programname = line.substr(i+1,6) ;
-                        cout<<programname<<"\n"; // eventually we will have to write the name into the new file we are trying to create
-                        //now continue
+                        result_line<<programname<<"\t"; // eventually we will have to write the name into the new file we are trying to create
+                        i = 7;
+                        string start_addr = line.substr(i,6);
+                        // string temp;
+                        if( start_addr == "000000" ){
+                           start_addr.erase( start_addr.begin()+1,start_addr.end() ) ;
+                        }
+                        result_line<<"START\t"<<start_addr<<"\n";
+                        cout << result_line.str();
+                        // remember you need to comback here and write to the file 
+                        // not just print it out
                         break;
 
                     }
@@ -120,11 +132,11 @@ int main(int argc,char *argv[]){
                         // now for the text record.. this is where things actually get interesting because we want taking in strings we 
                         // like without actually specifying values rather using a counter
                         // ah ah .. what we do in this case is that we should basically have a new loop and get the  
-                        int index = i + 6;
+                        int index = i + 8;
                         while(true){
                             //read the first two 
-                            
                             string first_two = line.substr(index+1,2);
+                            index += 2; // since we just read in two variables we need to increment index
                             int temp_val = char_to_int( first_two[1] );
                             //we need to convert the char value to its hexadecimal representation
                             // then perform the bit modification stuff to get the n,i values and also get the opcode
@@ -145,7 +157,14 @@ int main(int argc,char *argv[]){
                             string opcode;
                             ss << first_two[0] << int_to_char(temp_val);
                             ss >> opcode;
-                            cout<< opcode<<"\n";
+                            // cout<< opcode<<"\n";
+                            OpTab opTable;
+                            pair<string , string> opData;
+                            opData = opTable.getInstr(opcode);
+                            cout << opData.first <<"\n";
+                            // now we need to get the next the next byte and then get the x,b,p,e flags from it
+
+                            // now
                             break;
                         }
                     }
