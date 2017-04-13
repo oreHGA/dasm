@@ -1,23 +1,6 @@
 //This only works with the Symbol table, not the Literal table, for now..Still working on that
-#include<iostream>
-#include<fstream>
-#include<string>
-using namespace std;
+#include  "findLabel.h"
 
-
-//function declaration
- string searchSym(string fileName, string address);
- int main(){
-	
-	string fileName = "sample.sym";
-	string address = "00000B"; //address has 6 characters
-	
-	string label = searchSym(fileName, address);
-	cout << "label: " << label << endl;
-	
-	return 0;
-	
-}
 //function that will open file (symtab) to search if an address matches a label
  string searchSym(string fileName, string address){
  	
@@ -86,5 +69,5 @@ using namespace std;
 			return symbolName[i];
 		}
 	}
-	return "0";
+	return "NOT FOUND";
 }

@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include <map>
 #include "OpTab.h"
+#include "findLabel.h"
 
 using namespace std;
 
@@ -226,8 +226,12 @@ int main(int argc,char *argv[]){
                                 }
 
                                 // now we have our nixbpe flags the next thing to do is to get the actual stuff based on the flags
+                                
 
-
+                                // the address has to be a string of 6 characters
+                                string address = "001791";
+                                string label = searchSym(sym, address);
+                                cout<<label;
                                 // finally we need to figure out how to work with the literals stuff but for the most part we are good
                             }
                             break;
