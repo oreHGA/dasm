@@ -225,7 +225,10 @@ int main(int argc,char *argv[]){
                                     x_flag = true;
                                 }
 
-                                // now we have our nixbpe flags .. next thing we need to d
+                                // now we have our nixbpe flags the next thing to do is to get the actual stuff based on the flags
+
+
+                                // finally we need to figure out how to work with the literals stuff but for the most part we are good
                             }
                             break;
                         }
