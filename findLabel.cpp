@@ -1,6 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include<string>
+#include<sstream>
 using namespace std;
 
 
@@ -9,7 +10,7 @@ using namespace std;
  int main(){
 	
 	string fileName = "sample.sym";
-	string address = "000000"; //address has 6 characters
+	string address = "000003"; //address has 6 characters
 	
 	string label = searchSym(fileName, address);
 	cout << "label: " << label << endl;
@@ -19,7 +20,7 @@ using namespace std;
 }
 //function that will open file (symtab) to search if an address matches a label
  string searchSym(string fileName, string address){
- 	
+ 	//open symbol file
  	ifstream in(fileName.c_str());
 	if(!in){
 		cout << "Cannot open input file.\n";
@@ -37,8 +38,7 @@ using namespace std;
 		}
 	}
 	in.close();
-	
-	//separating symbols and literals
+	 //separating symbols and literals into separate arrays
 	string symbols[index];
 	string literals[index];
 	int indexSym = 0;
@@ -60,85 +60,89 @@ using namespace std;
 				
 	}
 	
-	//Splitting the symbol Name, Value, and Flag into separate arrays
+	//separating symbol information into different arrays
 	string symbolName[indexSym];
 	string symbolValue[indexSym];
 	string symbolFlag[indexSym];
-	int counter = 0;
-	int indexS = 0;
-	string s = symbols[0];
-	string delimiter = " ";	
-	size_t pos = 0;
-	string token;
-	
+	//A symbol's name, value, and flag are linked by location in arrays
+	int index2=0;
+	int counter2 = 0;
 	for(int i = 0; i < indexSym; i++){
-		string s = symbols[i];
-		while((pos = s.find(delimiter)) !=string::npos){
-			token = s.substr(0, pos);
-			if(token.compare("")){
-				if(counter == 0){
-					symbolName[indexS] = token;
-				}
-				if(counter == 1){
-					symbolValue[indexS] = token;
-				}	
-			counter++;
+		string s(symbols[i]);
+		istringstream iss(s);
+		do{
+			string sub;
+			iss >> sub;
+			if(counter2 == 0){
+				symbolName[index2] = sub;
+				counter2++;
 			}
-			s.erase(0, pos + delimiter.length());
-		}
-		symbolFlag[indexS] = s;
-		counter = 0;
-		indexS++;
+			else if(counter2 == 1){
+				symbolValue[index2] = sub;
+				counter2++;
+			}
+			else if(counter2 == 2){
+				symbolFlag[index2] = sub;
+				counter2++;
+			}
+			else{
+				counter2=0;
+				index2++;
+			}
+			
+		}while(iss);
 	}
-	for(int i = 0; i < indexS; i++){
+	
+	//check to see if address passed is the SYMTAB
+	for(int i = 0; i < index2;i++){
 		if(address.compare(symbolValue[i]) == 0){
-			return symbolName[i];
+			return symbolValue[i];
 		}
 	}
 	
-	//Working on separating literal values NOT YET DONE
-	//string literalName[indexLit];
-	//string literalLength[indexLit];
-	//string literalAddress[indexLit];
-	//int counterL = 0;
-	//int indexL = 0;
-	//string l = symbols[0];
-	//string delimiterl = " ";	
-	//size_t posl = 0;
-	//string tokenl;
+	//separating literal information into different arrays
+	string literalName[indexLit];
+	string literalLength[indexLit];
+	string literalAddress[indexLit];
+	//a literal's name, length, and address are linked by location in arrays
+	int index3=0;
+	int counter3=0;
 	
-	//for(int i = 0; i < indexLit; i++){
-	//	string l = literals[i];
-	//	while((posl = l.find(delimiterl)) !=string::npos){
-	//		tokenl = l.substr(0, pos);
-	//		if(tokenl[0] == ' '){
-	//			cout << "token: " << tokenl << endl;
-	//		}
-	//		else{
-	//			if(counterL == 0){
-	//				literalName[indexL] = tokenl;
-	//			}
-	//			if(counterL == 1){
-	//				literalLength[indexL] = tokenl;
-	//			}	
-	//		counterL++;
-	//		}
-	//		l.erase(0, posl + delimiterl.length());
-	//	}
-	//	literalAddress[indexL] = l;
-	//	counterL = 0;
-	//	indexL++;
-	//}
+	for(int i = 0; i < indexLit; i++){
+		string s(literals[i]);
+		istringstream iss(s);
+		do{
+			string sub;
+			iss >> sub;
+			if(counter3 == 0){
+				literalName[index3] = sub;
+				counter3++;
+			}
+			else if(counter3 == 1){
+				literalLength[index3] = sub;
+				counter3++;
+			}
+			else if(counter3 == 2){
+				literalAddress[index3] = sub;
+				counter3++;
+			}
+			else{
+				counter3=0;
+				index3++;
+			}
+			
+		}while(iss);
+	}
 	
-	//cout << "indexL: " << indexL << endl;
-	//cout << literalName[0] << endl;
+	//checking to see if address passed is in the LITTAB
+	for(int i = 0; i < index3;i++){
+		if(address.compare(literalAddress[i]) == 0){
+			return literalName[i];
+		}
+	}
 	
-	//for(int i = 0; i < indexL; i++){
-		//if(address.compare(literalAddress[i]) == 0){
-			//return literalName[i];
-		//}
-	//}
-	
-
+	//return 0 if address does not match any address in SYMTAB or LITTAB
 	return "0";
+	
 }
+
