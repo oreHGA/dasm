@@ -2,13 +2,18 @@
 #include  "findLabel.h"
 
 //function that will open file (symtab) to search if an address matches a label
- string searchSym(string fileName, string address){
- 	
+pair<string, int> searchSym(string fileName, string address){
+ 	int addr_len = address.length();
+	 cout<<"Address before manipulation is:"<< address<<"\n";
+	if(addr_len < 6){
+		for(int i =0;i<6-(addr_len);i++){
+			address.insert(address.begin(),'0');
+		}
+	}
  	ifstream in(fileName.c_str());
 	if(!in){
 		cout << "Cannot open input file.\n";
 	}
-	
 	//getting all lines from file
 	char str[255];
 	string lines[255];
@@ -24,6 +29,7 @@
 	
 	//getting only symbols
 	string symbols[index];
+	string literals[index];
 	int index2 = 0;
 	for(int i=0; i<index;i++){
 		string line = lines[i];
@@ -66,8 +72,66 @@
 	}
 	for(int i = 0; i < index3; i++){
 		if(address.compare(symbolValue[i]) == 0){
-			return symbolName[i];
+			return std::make_pair(symbolName[i],0);
 		}
 	}
-	return "NOT FOUND";
+
+	//separating literal information into different arrays
+	int indexLit = 0;
+	string literalName[indexLit];
+	string literalLength[indexLit];
+	string literalAddress[indexLit];
+	//a literal's name, length, and address are linked by location in arrays
+	index3=0;
+	int counter3=0;
+	
+	for(int i = 0; i < indexLit; i++){
+		string s(literals[i]);
+		istringstream iss(s);
+		do{
+			string sub;
+			iss >> sub;
+			if(counter3 == 0){
+				literalName[index3] = sub;
+				counter3++;
+			}
+			else if(counter3 == 1){
+				literalLength[index3] = sub;
+				counter3++;
+			}
+			else if(counter3 == 2){
+				literalAddress[index3] = sub;
+				counter3++;
+			}
+			else{
+				counter3=0;
+				index3++;
+			}
+			
+		}while(iss);
+	}
+	
+	//checking to see if address passed is in the LITTAB
+	int length;
+	string label;
+	for(int i = 0; i < index3;i++){
+		if(address.compare(literalAddress[i]) == 0){
+
+			label = literalName[i];
+			if(literalName[i].at(1) == 'X'){
+				// CONVERT THE LENGTH TO int then perform some operation and then turn it back to string
+				stringstream i_val(literalLength[i]);
+				i_val >> length;
+				length = length / 2 ;
+			}
+			else if(literalName[i].at(1) == 'C'){
+				stringstream i_val(literalLength[i]);
+				i_val >> length;
+				length = length * 2 ;
+			}
+			return std::make_pair(label,length);
+		}
+	}
+
+	return std::make_pair("NOT FOUND",0);
 }

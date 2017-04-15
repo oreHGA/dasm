@@ -3,10 +3,11 @@
 #define FINDLABEL_H
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <string>
 using namespace std;
 
-string searchSym(string fileName, string address);
+pair<string, int>  searchSym(string fileName, string address);
 
 #endif

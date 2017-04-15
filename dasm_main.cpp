@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <cmath>
 #include "OpTab.h"
 #include "findLabel.h"
 
@@ -11,6 +12,8 @@ using namespace std;
 int char_to_int(char val){
     if(val == '1')
         return 1;
+    else if(val == '0')
+        return 0;    
     else if( val == '2')
         return 2;
     else if( val == '3')
@@ -97,6 +100,21 @@ string get_register(char val){
             return "NOT VALID";
     }
 }
+int  hex_to_int(string address){
+    // so we first get the length of the address
+    // and then, for every character in the address
+    int length = address.length();
+    int value = 0 ;
+    for(int i=length-1;i>=0;i--){
+        int temp = char_to_int(address[i]);
+        int exponent = length - (i + 1);
+        temp = temp * (pow(16,exponent));
+        value = value + temp;
+        
+    }
+    return value;
+}
+
 int main(int argc,char *argv[]){
     if(argc != 2){
         //throw an error if the program is not executed properly throw an error
@@ -123,126 +141,208 @@ int main(int argc,char *argv[]){
         }
         else{
             // now that we can open the files , its time for business
+            int prog_counter;
+            int base = 0;
+            int start_address_val;
+            string first_instruction;
             string line;
             ofstream result_file;
             stringstream result_line;
+            OpTab opTable;
+            pair<string , string> opData;
+            
+            int index;
             while(getline(object_file,line)){
                 // cout<<line<< "\n";
                 // now we gonna process each line one by one 
                 int length = line.size();
                 int i = 0;
-                while (i<length){
-                    if(line.at(i) == 'H' ){
-                        // we are in the header record now
-                        // cout<<"Header\n";
-                        // next thing is to read the next 6 characters
-                        string programname = line.substr(i+1,6) ;
-                        result_line<<programname<<"\t"; // eventually we will have to write the name into the new file we are trying to create
-                        i = 7;
-                        string start_addr = line.substr(i,6);;
-                        if( start_addr == "000000" ){
-                           start_addr.erase( start_addr.begin()+1,start_addr.end() ) ;
-                        }
-                        result_line<<"START\t"<<start_addr<<"\n";
-                        cout << result_line.str();
-                        // remember you need to comback here and write to the file 
-                        // not just print it out
-                        break;
-
+                if(line.at(i) == 'H' ){
+                    // we are in the header record now
+                    // cout<<"Header\n";
+                    // next thing is to read the next 6 characters
+                    string programname = line.substr(i+1,6) ;
+                    result_line<<programname<<"\t"; // eventually we will have to write the name into the new file we are trying to create
+                    i = 6;
+                    string start_addr = line.substr(i+1,6);
+                    opData = opTable.getInstr(start_addr);
+                    first_instruction = opData.first;
+                    if( start_addr == "000000" ){
+                        start_addr.erase( start_addr.begin()+1,start_addr.end() ) ;
                     }
-                    else if(line.at(i) == 'T'){
-                        // cout<<"Text\n";
-                        // now for the text record.. this is where things actually get interesting because we want taking in strings we 
-                        // like without actually specifying values rather using a counter
-                        // ah ah .. what we do in this case is that we should basically have a new loop and get the  
-                        int index = i + 8;
-                        while(true){
-                            OpTab opTable;
-                            pair<string , string> opData;
-                            string opcode;
-                            //read the first two 
-                            string first_two = line.substr(index+1,2);
-                            index += 2; // since we just read in two variables we need to increment index
-                            //check if the first 2 are opcodes for format 1/2 instructions
-                            opData = opTable.getInstr(first_two);
-                            if(opData.second.compare("NOT FOUND") != 0){
-                                // this means we have a format 1 or 2 instruction
-                                if(opData.second == "1"){
-                                    result_line<<"      \t"<<opData.first;
+                    result_line<<"START\t"<<start_addr<<"\n";
+                    start_address_val = hex_to_int(start_addr);
+                    prog_counter = start_address_val;  
+                    cout << result_line.str();
+                    // write the resut line to the string
+                    continue;
+                }
+                else if(line.at(i) == 'T'){
+                    
+                    // cout<<"Text\n";
+                    if(i == 0){
+                        index = i + 8;
+                    }
+                    bool flag = true;
+                    while(flag){ 
+                        cout<<"Program counter variable\t"<<prog_counter<<endl;
+                        string target_addr;
+                        string opcode;
+                        //read the first two 
+                        string first_two = line.substr(index+1,2);
+                        index += 2; // since we just read in two variables we need to increment index
+                        //check if the first 2 are opcodes for format 1/2 instructions
+                        opData = opTable.getInstr(first_two);
+                        if(opData.second.compare("NOT FOUND") != 0){
+                            // this means we have a format 1 or 2 instruction
+                            if(opData.second == "1"){
+                                result_line<<"      \t"<<opData.first;
+                                prog_counter = prog_counter + 1;
+                            }
+                            else if(opData.second == "2"){
+                                // get register 1 and register 2
+                                // read in the next 2 bytes and then get the register from the get_registers function
+                                string registers = line.substr(index+1,2);
+                                index += 2;  // since we just read in two bytes, we need to increment the index
+                                string r1 = get_register(registers[0]);
+                                string r2 = get_register(registers[1]);
+                                result_line<<"      \t"<<opData.first<<"\t"<<r1<<","<<r2;
+                                prog_counter = prog_counter + 2;
+                            }
+                        }
+                        else{
+                            // at this point, we know that we are only dealing with format 3 and 4 now
+                            int temp_val = char_to_int( first_two[1] );
+                            //we need to convert the char value to its hexadecimal representation
+                            // then perform the bit modification stuff to get the n,i values and also get the opcode
+                            int n_i = temp_val & ( (2 << 1) - 1 );  // so now we have our N AND I values from here
+                            bool n_flag = false;
+                            bool i_flag = false;
+                            bool x_flag = false;
+                            bool b_flag = false;
+                            bool p_flag = false;
+                            bool e_flag = false;
+                            // performing some bit shifting to get the N AND 1 values from variable n_i
+                            if( (n_i & 1) == 1 ){
+                                i_flag = true;
+                            }   
+                            else if( (n_i >> 1) == 1){
+                                n_flag = true; 
+                            }    
+                            // we now have our n and i flag    
+                            temp_val = temp_val - n_i ;// this is the second part of the opcode
+                            // we need to get our opcode from variable first_two
+                            stringstream ss;
+                            ss << first_two[0] << int_to_char(temp_val);
+                            ss >> opcode;
+                            // cout<< opcode<<"\n";
+                            opData = opTable.getInstr(opcode);
+                            string mnemonic  =opData.first;
+                            
+                            // now we need to get the next the next byte and then get the x,b,p,e flags from it
+                            temp_val = line[index+1];
+                            index = index + 1;
+                            if((temp_val & 1) == 1 ){
+                                e_flag = true;
+                            }
+                            if( ((temp_val >> 1) & 1 ) == 1){
+                                p_flag = true;
+                            }
+                            if( ((temp_val >> 2) & 1 ) == 1){
+                                b_flag = true;
+                            }
+                            if( ((temp_val >> 3) & 1 ) == 1){
+                                x_flag = true;
+                            }
+                            // this is to increment the program counter
+                            if(e_flag == true){
+                                prog_counter = prog_counter + 4;
+                            }else{
+                                prog_counter = prog_counter + 3;
+                            }
+
+                            cout<<"Your flags are "<<n_flag<<" "<<i_flag<<" "<<x_flag<<" "<<b_flag<<" "<<p_flag<<" "<<e_flag<<"\n";
+
+                            // now to get data for the labels from the symtab
+                            pair <string,int> labelData;
+                            // now we have our nixbpe flags the next thing to do is to get the actual stuff based on the flags
+                            if( (b_flag == true) && (p_flag == false) && (e_flag == false)){
+                                string disp = line.substr(index+1,3);
+                                index += 3;
+                                int disp_int = hex_to_int(disp);
+                                int temp = disp_int + base;
+                                stringstream new_s;
+                                new_s << hex << temp;
+                                new_s >> target_addr;
+                                cout <<"Target address is going to be" << temp;
+                            }
+                            else if( (b_flag == false) && (p_flag == true) && (e_flag == false) ){
+                                string disp = line.substr(index+1,3);
+                                index += 3;
+                                int disp_int = hex_to_int(disp);
+                                int temp = disp_int + prog_counter;
+                                cout <<"program counter is "<< prog_counter << "Target address is going to be " << temp <<"\n"; 
+                                stringstream new_s;
+                                new_s << hex << temp;
+                                new_s >> target_addr;
+                            }
+                            else if ( (b_flag == false) && (p_flag == false) && (e_flag == true) ){
+                                target_addr = line.substr(index+1,4);
+                                cout <<"Target address is going to be" << target_addr;
+                                index += 4;
+                                // put a plus in front of the mnemonic stuff
+                                mnemonic.insert(mnemonic.begin(),'+');
+                            }
+                            else if( (b_flag == false) && (p_flag == false) && (e_flag == false) ){
+                                target_addr = line.substr(index+1,3);
+                                cout <<"Target address is going to be" << target_addr;
+                                index += 3;
+                            }
+
+                            if(n_flag == true && i_flag == false){
+                                labelData = searchSym(sym, target_addr);
+                                target_addr = labelData.first;
+                                target_addr.insert(target_addr.begin(),'@');
+                            }
+                            else if(i_flag == true && n_flag == false){
+                                // decimal value of target address 
+                                labelData = searchSym(sym, target_addr);
+                                string newtarget = labelData.first;
+                                if(newtarget == "NOT FOUND"){
+                                    int temp = hex_to_int(target_addr);
+                                    // convert to temp to the string value of the same thing
+                                    stringstream new_s;
+                                    new_s << temp;
+                                    new_s >> target_addr;
+                                    target_addr.insert(target_addr.begin(),'#');
                                 }
-                                else if(opData.second == "2"){
-                                    // get register 1 and register 2
-                                    // read in the next 2 bytes and then get the register from the get_registers function
-                                    string registers = line.substr(index+1,2);
-                                    index += 2;  // since we just read in two bytes, we need to increment the index
-                                    string r1 = get_register(registers[0]);
-                                    string r2 = get_register(registers[1]);
-                                    result_line<<"      \t"<<opData.first<<"\t"<<r1<<","<<r2;
+                                else{
+                                    target_addr = newtarget;
+                                    target_addr.insert(target_addr.begin(),'#');
                                 }
                             }
                             else{
-                                // at this point, we know that we are only dealing with format 3 and 4 now
-                                int temp_val = char_to_int( first_two[1] );
-                                //we need to convert the char value to its hexadecimal representation
-                                // then perform the bit modification stuff to get the n,i values and also get the opcode
-                                int n_i = temp_val & ( (2 << 1) - 1 );  // so now we have our N AND I values from here
-                                bool n_flag = false;
-                                bool i_flag = false;
-                                bool x_flag = false;
-                                bool b_flag = false;
-                                bool p_flag = false;
-                                bool e_flag = false;
-                                // performing some bit shifting to get the N AND 1 values from variable n_i
-                                if( (n_i & 1) == 1 ){
-                                    i_flag = true;
-                                }   
-                                else if( (n_i >> 1) == 1){
-                                    n_flag = true; 
-                                }    
-                                // we now have our n and i flag    
-                                temp_val = temp_val - n_i ;// this is the second part of the opcode
-                                // we need to get our opcode from variable first_two
-                                stringstream ss;
-                                ss << first_two[0] << int_to_char(temp_val);
-                                ss >> opcode;
-                                // cout<< opcode<<"\n";
-                                opData = opTable.getInstr(opcode);
-                                cout << opData.first <<"\n";
-                                
-                                // now we need to get the next the next byte and then get the x,b,p,e flags from it
-                                temp_val = char_to_int(line[index+1]);
-                                index += 1;
-                                if((index & 1) == 1 ){
-                                    e_flag = true;
-                                }
-                                if(((index >> 1) & 1 ) == 1){
-                                    p_flag = true;
-                                }
-                                if(((index >> 2) & 1 ) == 1){
-                                    b_flag = true;
-                                }
-                                if(((index >> 3) & 1 ) == 1){
-                                    x_flag = true;
-                                }
-
-                                // now we have our nixbpe flags the next thing to do is to get the actual stuff based on the flags
-                                
-
-                                // the address has to be a string of 6 characters
-                                string address = "001791";
-                                string label = searchSym(sym, address);
-                                cout<<label;
-                                // finally we need to figure out how to work with the literals stuff but for the most part we are good
+                                labelData = searchSym(sym, target_addr);
+                                target_addr = labelData.first;
                             }
-                            break;
+
+                            if(x_flag == true){
+                                target_addr.append(",X");
+                            }
+                            result_line.str(std::string());
+                            result_line<<"      \t" << mnemonic << "\t"<<target_addr<<"\n";
+                            target_addr.clear();
+                            cout << result_line.str();
+                            // finally we need to figure out how to work with the literals stuff but for the most part we are good
                         }
+                        // break;
                     }
-                    else if(line.at(i) == 'M'){
-                        break;
-                    }
-                    else if(line.at(i) == 'E'){
-                        // cout<<"End\n";
-                    }
+                }
+                else if(line.at(i) == 'M'){
+                    break;
+                }
+                else if(line.at(i) == 'E'){
+                    result_line <<"      \tEND\t"<<first_instruction;
                     break;
                 }
             }
