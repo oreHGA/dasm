@@ -9,5 +9,5 @@
 using namespace std;
 
 pair<string, int>  searchSym(string fileName, string address);
-
+pair<string,int> searchLit(string fileName, string address);
 #endif

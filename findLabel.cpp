@@ -4,12 +4,13 @@
 //function that will open file (symtab) to search if an address matches a label
 pair<string, int> searchSym(string fileName, string address){
  	int addr_len = address.length();
-	 cout<<"Address before manipulation is:"<< address<<"\n";
+	 
 	if(addr_len < 6){
 		for(int i =0;i<6-(addr_len);i++){
 			address.insert(address.begin(),'0');
 		}
 	}
+
  	ifstream in(fileName.c_str());
 	if(!in){
 		cout << "Cannot open input file.\n";
@@ -29,7 +30,6 @@ pair<string, int> searchSym(string fileName, string address){
 	
 	//getting only symbols
 	string symbols[index];
-	string literals[index];
 	int index2 = 0;
 	for(int i=0; i<index;i++){
 		string line = lines[i];
@@ -77,13 +77,66 @@ pair<string, int> searchSym(string fileName, string address){
 	}
 
 	//separating literal information into different arrays
+	return std::make_pair("NOT FOUND",0);
+
+}
+
+pair<string,int> searchLit(string fileName, string address){
+	int addr_len = address.length();
+	if(addr_len < 6){
+		for(int i =0;i<6-(addr_len);i++){
+			address.insert(address.begin(),'0');
+		}
+	}
+	cout << "The address is " << address<< endl;
+	ifstream in(fileName.c_str());
+	if(!in){
+		cout << "Cannot open input file.\n";
+	}
+	//getting all lines from file
+	char str[255];
+	string lines[255];
+	int index = 0;
+	while(in){
+		in.getline(str, 255);
+		if(in){
+			lines[index] = str;
+			index++;
+		}
+	}
+	in.close();
+	
+	//separting literals
 	int indexLit = 0;
+	string literals[index];
+	int index2 = 0;
+	for(int i=0; i<index;i++){
+		string line = lines[i];
+		char letter = line[1];//Labels are all in caps
+		if(!line.empty()){
+			//takes off significant markers for the symtab and littab
+			if(letter >= 'A' && letter <= 'Z'){
+				continue;
+			}
+			else if(!(letter >= 'a' && letter <= 'z') && letter != '-'){
+				literals[indexLit] = lines[i];
+				indexLit++;
+			}
+		}
+				
+	}
+	
+	
 	string literalName[indexLit];
 	string literalLength[indexLit];
 	string literalAddress[indexLit];
 	//a literal's name, length, and address are linked by location in arrays
-	index3=0;
+	int index3=0;
 	int counter3=0;
+	string s = literals[0];
+	string delimiter = " ";	
+	size_t pos = 0;
+	string token;
 	
 	for(int i = 0; i < indexLit; i++){
 		string s(literals[i]);
@@ -116,7 +169,6 @@ pair<string, int> searchSym(string fileName, string address){
 	string label;
 	for(int i = 0; i < index3;i++){
 		if(address.compare(literalAddress[i]) == 0){
-
 			label = literalName[i];
 			if(literalName[i].at(1) == 'X'){
 				// CONVERT THE LENGTH TO int then perform some operation and then turn it back to string
@@ -127,11 +179,9 @@ pair<string, int> searchSym(string fileName, string address){
 			else if(literalName[i].at(1) == 'C'){
 				stringstream i_val(literalLength[i]);
 				i_val >> length;
-				length = length * 2 ;
 			}
 			return std::make_pair(label,length);
 		}
 	}
-
 	return std::make_pair("NOT FOUND",0);
 }

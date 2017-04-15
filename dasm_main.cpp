@@ -44,7 +44,9 @@ int char_to_int(char val){
         return 15;    
 }
 char int_to_char(int val){
-    if(val == 1)
+    if(val == 0)
+        return '0';
+    else if(val == 1)
         return '1';
     else if( val == 2)
         return '2';
@@ -150,7 +152,6 @@ int main(int argc,char *argv[]){
             stringstream result_line;
             OpTab opTable;
             pair<string , string> opData;
-            
             int index;
             while(getline(object_file,line)){
                 // cout<<line<< "\n";
@@ -178,67 +179,63 @@ int main(int argc,char *argv[]){
                     continue;
                 }
                 else if(line.at(i) == 'T'){
-                    
-                    // cout<<"Text\n";
                     if(i == 0){
                         index = i + 8;
                     }
                     bool flag = true;
                     while(flag){ 
-                        cout<<"Program counter variable\t"<<prog_counter<<endl;
                         string target_addr;
                         string opcode;
+                        bool is_literal = false;
+                        
                         //read the first two 
                         string first_two = line.substr(index+1,2);
                         index += 2; // since we just read in two variables we need to increment index
-                        //check if the first 2 are opcodes for format 1/2 instructions
-                        opData = opTable.getInstr(first_two);
-                        if(opData.second.compare("NOT FOUND") != 0){
+                        int temp_val = char_to_int( first_two[1] );
+                        int n_i = temp_val % 4;  // so now we have our N AND I values from here
+                        bool n_flag = false;
+                        bool i_flag = false;
+                        if( (n_i & 1) == 1 ){
+                            i_flag = true;
+                        }   
+                        if( (n_i >> 1) == 1){
+                            n_flag = true; 
+                        }    
+                        // we now have our n and i flag    
+                        temp_val = temp_val - n_i ;// this is the second part of the opcode
+                        // we need to get our opcode from variable first_two
+                        stringstream ss;
+                        ss << first_two[0] << int_to_char(temp_val);
+                        ss >> opcode;
+                        opData = opTable.getInstr(opcode);
+
+                        if(opData.second == "NOT FOUND"){
                             // this means we have a format 1 or 2 instruction
-                            if(opData.second == "1"){
-                                result_line<<"      \t"<<opData.first;
-                                prog_counter = prog_counter + 1;
-                            }
-                            else if(opData.second == "2"){
-                                // get register 1 and register 2
-                                // read in the next 2 bytes and then get the register from the get_registers function
-                                string registers = line.substr(index+1,2);
-                                index += 2;  // since we just read in two bytes, we need to increment the index
-                                string r1 = get_register(registers[0]);
-                                string r2 = get_register(registers[1]);
-                                result_line<<"      \t"<<opData.first<<"\t"<<r1<<","<<r2;
-                                prog_counter = prog_counter + 2;
-                            }
+                            cout<<"Incorrect Object file :("<<endl;
+                            exit(1);
+                        }
+                        if(opData.second == "1"){
+                            result_line<<"      \t"<<opData.first;
+                            prog_counter = prog_counter + 1;
+                            cout<<"Program counter variable\t"<<prog_counter<<endl;
+                        }
+                        else if(opData.second == "2"){
+                            // get register 1 and register 2
+                            // read in the next 2 bytes and then get the register from the get_registers function
+                            string registers = line.substr(index+1,2);
+                            index += 2;  // since we just read in two bytes, we need to increment the index
+                            string r1 = get_register(registers[0]);
+                            string r2 = get_register(registers[1]);
+                            result_line<<"      \t"<<opData.first<<"\t"<<r1<<","<<r2;
+                            prog_counter = prog_counter + 2;
+                            cout<<"Program counter variable\t"<<prog_counter<<endl;                        
                         }
                         else{
-                            // at this point, we know that we are only dealing with format 3 and 4 now
-                            int temp_val = char_to_int( first_two[1] );
-                            //we need to convert the char value to its hexadecimal representation
-                            // then perform the bit modification stuff to get the n,i values and also get the opcode
-                            int n_i = temp_val & ( (2 << 1) - 1 );  // so now we have our N AND I values from here
-                            bool n_flag = false;
-                            bool i_flag = false;
+                            string mnemonic  = opData.first;
                             bool x_flag = false;
                             bool b_flag = false;
                             bool p_flag = false;
                             bool e_flag = false;
-                            // performing some bit shifting to get the N AND 1 values from variable n_i
-                            if( (n_i & 1) == 1 ){
-                                i_flag = true;
-                            }   
-                            else if( (n_i >> 1) == 1){
-                                n_flag = true; 
-                            }    
-                            // we now have our n and i flag    
-                            temp_val = temp_val - n_i ;// this is the second part of the opcode
-                            // we need to get our opcode from variable first_two
-                            stringstream ss;
-                            ss << first_two[0] << int_to_char(temp_val);
-                            ss >> opcode;
-                            // cout<< opcode<<"\n";
-                            opData = opTable.getInstr(opcode);
-                            string mnemonic  =opData.first;
-                            
                             // now we need to get the next the next byte and then get the x,b,p,e flags from it
                             temp_val = line[index+1];
                             index = index + 1;
@@ -260,9 +257,8 @@ int main(int argc,char *argv[]){
                             }else{
                                 prog_counter = prog_counter + 3;
                             }
-
-                            cout<<"Your flags are "<<n_flag<<" "<<i_flag<<" "<<x_flag<<" "<<b_flag<<" "<<p_flag<<" "<<e_flag<<"\n";
-
+                            // cout<<"Program counter variable\t"<<prog_counter<<endl;
+                            // cout<<"Your flags are "<<n_flag<<" "<<i_flag<<" "<<x_flag<<" "<<b_flag<<" "<<p_flag<<" "<<e_flag<<"\n";
                             // now to get data for the labels from the symtab
                             pair <string,int> labelData;
                             // now we have our nixbpe flags the next thing to do is to get the actual stuff based on the flags
@@ -274,55 +270,76 @@ int main(int argc,char *argv[]){
                                 stringstream new_s;
                                 new_s << hex << temp;
                                 new_s >> target_addr;
-                                cout <<"Target address is going to be" << temp;
                             }
                             else if( (b_flag == false) && (p_flag == true) && (e_flag == false) ){
                                 string disp = line.substr(index+1,3);
                                 index += 3;
                                 int disp_int = hex_to_int(disp);
                                 int temp = disp_int + prog_counter;
-                                cout <<"program counter is "<< prog_counter << "Target address is going to be " << temp <<"\n"; 
                                 stringstream new_s;
                                 new_s << hex << temp;
                                 new_s >> target_addr;
                             }
                             else if ( (b_flag == false) && (p_flag == false) && (e_flag == true) ){
-                                target_addr = line.substr(index+1,4);
-                                cout <<"Target address is going to be" << target_addr;
-                                index += 4;
+                                target_addr = line.substr(index+1,5);
+                                index += 5;
                                 // put a plus in front of the mnemonic stuff
                                 mnemonic.insert(mnemonic.begin(),'+');
                             }
                             else if( (b_flag == false) && (p_flag == false) && (e_flag == false) ){
                                 target_addr = line.substr(index+1,3);
-                                cout <<"Target address is going to be" << target_addr;
                                 index += 3;
                             }
 
+                            // handling immediate/indexed/simple addressing
                             if(n_flag == true && i_flag == false){
                                 labelData = searchSym(sym, target_addr);
+                                if(labelData.first == "NOT FOUND"){
+                                    labelData = searchLit(sym, target_addr);
+                                    if(labelData.first == "NOT FOUND"){
+                                        cout<<"LABEL DOES NOT EXIST"<<endl;
+                                        exit(1);
+                                    }else{
+                                        is_literal = true;
+                                    }
+                                }
                                 target_addr = labelData.first;
                                 target_addr.insert(target_addr.begin(),'@');
                             }
                             else if(i_flag == true && n_flag == false){
                                 // decimal value of target address 
                                 labelData = searchSym(sym, target_addr);
-                                string newtarget = labelData.first;
-                                if(newtarget == "NOT FOUND"){
-                                    int temp = hex_to_int(target_addr);
-                                    // convert to temp to the string value of the same thing
-                                    stringstream new_s;
-                                    new_s << temp;
-                                    new_s >> target_addr;
-                                    target_addr.insert(target_addr.begin(),'#');
-                                }
+                                if(labelData.first == "NOT FOUND"){
+                                    labelData = searchLit(sym, target_addr);
+                                    if(labelData.first == "NOT FOUND"){
+                                        int temp = hex_to_int(target_addr);
+                                        // convert to temp to the string value of the same thing
+                                        stringstream new_s;
+                                        new_s << temp;
+                                        new_s >> target_addr;
+                                        target_addr.insert(target_addr.begin(),'#');
+                                    }
+                                    else{
+                                        is_literal = true;
+                                    }
+                                }                                
                                 else{
-                                    target_addr = newtarget;
+                                    target_addr = labelData.first;
                                     target_addr.insert(target_addr.begin(),'#');
                                 }
                             }
-                            else{
+                            else{ // if both n and i are on or off
                                 labelData = searchSym(sym, target_addr);
+                                if(labelData.first == "NOT FOUND"){
+                                    labelData = searchLit(sym, target_addr);
+                                    if(labelData.first == "NOT FOUND"){
+                                        cout<<"ERROR! LABEL NOT FOUND"<<endl;
+                                        exit(1);
+                                    }
+                                    else{
+                                        is_literal = true;
+                                    }
+                                }
                                 target_addr = labelData.first;
                             }
 
@@ -331,8 +348,20 @@ int main(int argc,char *argv[]){
                             }
                             result_line.str(std::string());
                             result_line<<"      \t" << mnemonic << "\t"<<target_addr<<"\n";
-                            target_addr.clear();
                             cout << result_line.str();
+                            if( mnemonic.find("LDB") != std::string::npos ){
+                                result_line.str(std::string());
+                                result_line<<"      \t"<<"BASE\t"<<labelData.first<<"\n";
+                                cout << result_line.str();
+                            }
+                            if( is_literal == true ){
+                                result_line.str(std::string());
+                                result_line<<"      \t"<<"LTORG\n";
+                                index = index +  (2 * labelData.second);
+                                prog_counter = prog_counter + labelData.second;
+                                cout<< result_line.str();
+                            }
+                            target_addr.clear();
                             // finally we need to figure out how to work with the literals stuff but for the most part we are good
                         }
                         // break;
