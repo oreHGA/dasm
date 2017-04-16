@@ -197,7 +197,7 @@ int main(int argc,char *argv[]){
                         index = i + 8;
                     }
                     bool flag = true;
-                    while(flag){ 
+                    while(index+1 < line.length()){ 
                         stringstream loc_ss;
                         loc_ss << std::uppercase << hex <<  prog_counter;
                         loc_ss >> loc_counter; 
@@ -404,19 +404,16 @@ int main(int argc,char *argv[]){
                                 prog_counter = prog_counter + labelData.second;
                                 cout<< result_line.str();
                             }
-
-                            
                             target_addr.clear();
-                            // finally we need to figure out how to work with the literals stuff but for the most part we are good
                         }
-                        // break;
-                    }
+                     }
                 }
                 else if(line.at(i) == 'M'){
                     break;
                 }
                 else if(line.at(i) == 'E'){
                     result_line <<"      \tEND\t"<<first_instruction;
+                    cout<< result_line.str();
                     break;
                 }
             }
