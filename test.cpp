@@ -1,16 +1,14 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "findLabel"
 
 using namespace std;
 int main(){
-    string address = "0000"
-
-    string val = "000009";
-    int temp = hex_to_int(val);
+    int val = 5;
+    stringstream ss(val);
+    string ffd;
+    ss >> ffd;
+    std::cout << ffd  << std::endl;
     
-    cout<<temp;
-    return 0; 
 }
 

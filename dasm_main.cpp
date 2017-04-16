@@ -102,9 +102,10 @@ string get_register(char val){
             return "NOT VALID";
     }
 }
-int  hex_to_int(string address){
+int  hex_to_int(string address,bool p = false){
     // so we first get the length of the address
     // and then, for every character in the address
+    
     int length = address.length();
     int value = 0 ;
     for(int i=length-1;i>=0;i--){
@@ -114,8 +115,19 @@ int  hex_to_int(string address){
         value = value + temp;
         
     }
+    if(value > 2047 && (p == true)){
+        for(int i=length;i< 8;i++){
+            address.insert(address.begin(),'F');
+        }
+        unsigned int x;
+        std::stringstream ss;
+        ss << std::hex << address;      
+        ss >> x;                       
+        value = static_cast<int>(x);
+    }
     return value;
 }
+
 
 int main(int argc,char *argv[]){
     if(argc != 2){
@@ -144,6 +156,8 @@ int main(int argc,char *argv[]){
         else{
             // now that we can open the files , its time for business
             int prog_counter;
+            string loc_counter;
+            int target_addr_int = 0 ;
             int base = 0;
             int start_address_val;
             string first_instruction;
@@ -184,12 +198,23 @@ int main(int argc,char *argv[]){
                     }
                     bool flag = true;
                     while(flag){ 
+                        stringstream loc_ss;
+                        loc_ss << std::uppercase << hex <<  prog_counter;
+                        loc_ss >> loc_counter; 
+
                         string target_addr;
                         string opcode;
                         bool is_literal = false;
-                        
+                        // this is to print the label if any in front of the lines
+                        pair<string,int> front_label;
+                        // cout<<"Location counter is " << loc_counter<<endl;
+                        front_label = searchSym(sym,loc_counter);
+                        if(front_label.first == "NOT FOUND"){
+                            front_label.first = "      ";
+                        }
                         //read the first two 
                         string first_two = line.substr(index+1,2);
+                        // cout <<"value to be read in"<<first_two<< endl;
                         index += 2; // since we just read in two variables we need to increment index
                         int temp_val = char_to_int( first_two[1] );
                         int n_i = temp_val % 4;  // so now we have our N AND I values from here
@@ -217,7 +242,6 @@ int main(int argc,char *argv[]){
                         if(opData.second == "1"){
                             result_line<<"      \t"<<opData.first;
                             prog_counter = prog_counter + 1;
-                            cout<<"Program counter variable\t"<<prog_counter<<endl;
                         }
                         else if(opData.second == "2"){
                             // get register 1 and register 2
@@ -227,8 +251,7 @@ int main(int argc,char *argv[]){
                             string r1 = get_register(registers[0]);
                             string r2 = get_register(registers[1]);
                             result_line<<"      \t"<<opData.first<<"\t"<<r1<<","<<r2;
-                            prog_counter = prog_counter + 2;
-                            cout<<"Program counter variable\t"<<prog_counter<<endl;                        
+                            prog_counter = prog_counter + 2;                 
                         }
                         else{
                             string mnemonic  = opData.first;
@@ -237,7 +260,8 @@ int main(int argc,char *argv[]){
                             bool p_flag = false;
                             bool e_flag = false;
                             // now we need to get the next the next byte and then get the x,b,p,e flags from it
-                            temp_val = line[index+1];
+                            temp_val = char_to_int(line[index+1]);
+                            // cout<<"The value being used for xbpe is "<< temp_val << endl;
                             index = index + 1;
                             if((temp_val & 1) == 1 ){
                                 e_flag = true;
@@ -257,31 +281,33 @@ int main(int argc,char *argv[]){
                             }else{
                                 prog_counter = prog_counter + 3;
                             }
-                            // cout<<"Program counter variable\t"<<prog_counter<<endl;
                             // cout<<"Your flags are "<<n_flag<<" "<<i_flag<<" "<<x_flag<<" "<<b_flag<<" "<<p_flag<<" "<<e_flag<<"\n";
                             // now to get data for the labels from the symtab
                             pair <string,int> labelData;
+
                             // now we have our nixbpe flags the next thing to do is to get the actual stuff based on the flags
                             if( (b_flag == true) && (p_flag == false) && (e_flag == false)){
                                 string disp = line.substr(index+1,3);
                                 index += 3;
                                 int disp_int = hex_to_int(disp);
-                                int temp = disp_int + base;
+                                target_addr_int = disp_int + base;
                                 stringstream new_s;
-                                new_s << hex << temp;
+                                new_s << std::uppercase << hex << target_addr_int;
                                 new_s >> target_addr;
                             }
                             else if( (b_flag == false) && (p_flag == true) && (e_flag == false) ){
                                 string disp = line.substr(index+1,3);
                                 index += 3;
-                                int disp_int = hex_to_int(disp);
-                                int temp = disp_int + prog_counter;
+                                int disp_int = hex_to_int(disp,true);
+                                // cout << "The result is :: \t"<< disp_int<<endl;
+                                target_addr_int = disp_int + prog_counter;
                                 stringstream new_s;
-                                new_s << hex << temp;
+                                new_s << std::uppercase <<  hex << target_addr_int;
                                 new_s >> target_addr;
                             }
                             else if ( (b_flag == false) && (p_flag == false) && (e_flag == true) ){
                                 target_addr = line.substr(index+1,5);
+                                target_addr_int = hex_to_int(target_addr);
                                 index += 5;
                                 // put a plus in front of the mnemonic stuff
                                 mnemonic.insert(mnemonic.begin(),'+');
@@ -308,27 +334,43 @@ int main(int argc,char *argv[]){
                             }
                             else if(i_flag == true && n_flag == false){
                                 // decimal value of target address 
-                                labelData = searchSym(sym, target_addr);
-                                if(labelData.first == "NOT FOUND"){
-                                    labelData = searchLit(sym, target_addr);
+                                if(b_flag == false && p_flag == false && e_flag == false){
+                                    int temp = hex_to_int(target_addr);
+                                    // convert to temp to the string value of the same thing
+                                    stringstream new_s;
+                                    new_s << std::uppercase << temp;
+                                    new_s >> target_addr;
+                                    target_addr.insert(target_addr.begin(),'#');
+                                }
+                                else if(e_flag == true){
+                                    labelData = searchSym(sym, target_addr);
                                     if(labelData.first == "NOT FOUND"){
                                         int temp = hex_to_int(target_addr);
                                         // convert to temp to the string value of the same thing
                                         stringstream new_s;
-                                        new_s << temp;
+                                        new_s << std::uppercase << temp;
                                         new_s >> target_addr;
                                         target_addr.insert(target_addr.begin(),'#');
-                                    }
+                                    }                                
                                     else{
-                                        is_literal = true;
+                                        target_addr = labelData.first;
+                                        target_addr.insert(target_addr.begin(),'#');
                                     }
-                                }                                
+                                }
                                 else{
-                                    target_addr = labelData.first;
-                                    target_addr.insert(target_addr.begin(),'#');
+                                    labelData = searchSym(sym, target_addr);
+                                    if(labelData.first == "NOT FOUND"){
+                                        cout<<"ERROR!! DOES NOT EXIST"<<endl;
+                                        exit(1);
+                                    }                                
+                                    else{
+                                        target_addr = labelData.first;
+                                        target_addr.insert(target_addr.begin(),'#');
+                                    }
                                 }
                             }
                             else{ // if both n and i are on or off
+
                                 labelData = searchSym(sym, target_addr);
                                 if(labelData.first == "NOT FOUND"){
                                     labelData = searchLit(sym, target_addr);
@@ -347,11 +389,12 @@ int main(int argc,char *argv[]){
                                 target_addr.append(",X");
                             }
                             result_line.str(std::string());
-                            result_line<<"      \t" << mnemonic << "\t"<<target_addr<<"\n";
+                            result_line<<front_label.first<<"\t" << mnemonic << "\t"<<target_addr<<"\n";
                             cout << result_line.str();
                             if( mnemonic.find("LDB") != std::string::npos ){
                                 result_line.str(std::string());
                                 result_line<<"      \t"<<"BASE\t"<<labelData.first<<"\n";
+                                base = target_addr_int;
                                 cout << result_line.str();
                             }
                             if( is_literal == true ){
@@ -361,6 +404,8 @@ int main(int argc,char *argv[]){
                                 prog_counter = prog_counter + labelData.second;
                                 cout<< result_line.str();
                             }
+
+                            
                             target_addr.clear();
                             // finally we need to figure out how to work with the literals stuff but for the most part we are good
                         }

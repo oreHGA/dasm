@@ -88,7 +88,7 @@ pair<string,int> searchLit(string fileName, string address){
 			address.insert(address.begin(),'0');
 		}
 	}
-	cout << "The address is " << address<< endl;
+	// cout << "The address is " << address<< endl;
 	ifstream in(fileName.c_str());
 	if(!in){
 		cout << "Cannot open input file.\n";
