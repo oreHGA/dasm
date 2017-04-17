@@ -34,10 +34,10 @@ Program Description:
 	will contain the listing of SIC/XE machine instructions of the <filename>.obj file. 
 	
 Compile instructions:
-	To compile the program, enter "make dasm" in the directory that contains the files.
+	To compile the program, enter " make " in the directory that contains the files.
 	This will execute the makefile we have created for this program which will compile the
 	OpTab.cpp, findLabel.cpp, and dasm_main.cpp file for the user. The executable will be
-	dasm 'disassembler'.
+	'dasm'.
 
 Operating instructions:
 	To run the disassembler, the user shall provide a <filename>.obj file and its accompanying 
