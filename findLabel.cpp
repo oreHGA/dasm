@@ -2,6 +2,7 @@
 #include  "findLabel.h"
 
 //function that will open file (symtab) to search if an address matches a label
+
 pair<string, int> searchSym(string fileName, string address){
  	int addr_len = address.length();
 	 
@@ -70,9 +71,14 @@ pair<string, int> searchSym(string fileName, string address){
 		counter = 0;
 		index3++;
 	}
+
+	int length;
 	for(int i = 0; i < index3; i++){
 		if(address.compare(symbolValue[i]) == 0){
-			return std::make_pair(symbolName[i],0);
+			stringstream ss;
+			ss <<  std::hex  << symbolValue[i];
+			ss >> length;
+			return std::make_pair(symbolName[i],length);
 		}
 	}
 

@@ -167,6 +167,7 @@ int main(int argc,char *argv[]){
             OpTab opTable;
             pair<string , string> opData;
             int index;
+            int object_length;
             while(getline(object_file,line)){
                 // cout<<line<< "\n";
                 // now we gonna process each line one by one 
@@ -180,8 +181,14 @@ int main(int argc,char *argv[]){
                     result_line<<programname<<"\t"; // eventually we will have to write the name into the new file we are trying to create
                     i = 6;
                     string start_addr = line.substr(i+1,6);
+                    i = i+6;
+                    string obj_length = line.substr(i+1,6);
+                    object_length = hex_to_int(obj_length);
+                    cout<<object_length;
+                    // cout<< start_addr;
+                    pair<string,int> first_label = searchSym(sym,start_addr);
+                    first_instruction = first_label.first;
                     opData = opTable.getInstr(start_addr);
-                    first_instruction = opData.first;
                     if( start_addr == "000000" ){
                         start_addr.erase( start_addr.begin()+1,start_addr.end() ) ;
                     }
@@ -388,6 +395,9 @@ int main(int argc,char *argv[]){
                             if(x_flag == true){
                                 target_addr.append(",X");
                             }
+                            if( mnemonic.find("RSUB") != std::string::npos ){
+                                target_addr.clear();
+                            }
                             result_line.str(std::string());
                             result_line<<front_label.first<<"\t" << mnemonic << "\t"<<target_addr<<"\n";
                             cout << result_line.str();
@@ -407,23 +417,27 @@ int main(int argc,char *argv[]){
                             target_addr.clear();
                         }
                      }
+                     continue;
                 }
-                else if(line.at(i) == 'M'){
-                    break;
+                else if(line.at(i) == 'M'){                                                                                                                                                  
+                    continue;
                 }
                 else if(line.at(i) == 'E'){
-                    result_line <<"      \tEND\t"<<first_instruction;
+                    stringstream loc_ss;
+                    loc_ss << std::uppercase << hex <<  prog_counter;
+                    loc_ss >> loc_counter;
+
+                    
+
+                    result_line.str(std::string());
+                    result_line <<"      \tEND\t"<<first_instruction<<endl;
                     cout<< result_line.str();
                     break;
                 }
             }
             object_file.close();
             symtab.close();
-            // ifstream 
-            // to open and read to it
-            // resultfile.open("name of file");
-            // close file using 
-            // resultfile.close();
+            
         }   
     }
     // cout<<"Welcome back Captiain!I missed you\n";
