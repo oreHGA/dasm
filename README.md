@@ -1,4 +1,4 @@
-Nick Krisa
+Nick Krisa - cssc0869
 Ayessa Medrano - cssc0841
 Oreoluwa Ogundipe - cssc0842
 Elliott Watson - cssc1017
