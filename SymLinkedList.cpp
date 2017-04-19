@@ -104,7 +104,7 @@ Node* parseSym(string filename){
 	
 	for(int i=1; i<index3;i++){ //start at index 1 because already handled index 0
 		if(root == NULL){
-			cout << "shouldn't be here" << endl;
+			cout << "Symbol Table is Empty" << endl;
 		}
 		else{
 			root = addNode(root, symbolName[i], symbolValue[i]);
@@ -124,7 +124,7 @@ string getAddress(Node *head, string s) {
   Node *cur = head;
 
   while (cur) {
-    if (cur->symbol == s) {
+     if (cur->symbol.compare(s) == 0) {
       return cur->address;
     }
     cur = cur->next;
@@ -136,7 +136,7 @@ string getSymbol(Node *head, string a) {
   Node *cur = head;
 
   while (cur) {
-    if (cur->address == a) {
+    if (cur->address.compare(a) == 0) {
       return cur->symbol;
     }
     cur = cur->next;
@@ -148,6 +148,10 @@ int main(){
 	Node *symlist = parseSym(filename); 
 	Node *pointer = symlist;
 	//looping through linked list
+	string address = getAddress(symlist, "FIRST");
+	string name = getSymbol(symlist, "00000B");
+	cout << " works: " << address << endl;
+	cout << " works: " << name << endl;
 	while(pointer != NULL){
 		cout << pointer->symbol << endl;
 		cout << pointer->address << endl;
