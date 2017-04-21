@@ -7,7 +7,7 @@ Class Information - CS 530, Spring 2017
 Assignment Information - Programming Assignment #2, SIC/XE Disassembler
 FileName: README
 
-File manifest: OpTab.cpp findLabel.cpp dasm_main.cpp makefile README
+File manifest: OpTab.cpp findLabel.cpp SymLinkedList.cpp dasm_main.cpp makefile README
 
 Program Description: 
 	This program will simulate a SIC/XE disassembler. The program will process the data of an object program, 
@@ -17,11 +17,14 @@ Program Description:
 	generate a <filename>.sic file. 
 		When the program executes, the <filename>.obj file and the <filename>.sym file will be opened
 	and its contents extracted. dasm_main.cpp will process the individual object codes in the object program, 
-	with the help of OpTab.cpp and findLabel.cpp, into machine instructions. To create the necessary 
+	with the help of OpTab.cpp, findLabel.cpp, and SymLinkedList.cpp into machine instructions. To create the necessary 
 	<filename>.sic file, OpTab.cpp was created. OpTab.cpp contains the mnemonic operation codes (opcodes) available
 	on SIC/XE programming language and will be necessary when writing to the <filename>.sic file. The 
 	<filename>.sym file's will contain the SYMTAB/LITTAB. The symbols and literals will be processed from the 
-	file and used to find labels for the addresses they correspond to using findLabel.cpp.
+	file and used to find labels for the addresses they correspond to using findLabel.cpp and SymLinkedList.cpp.
+	SymLinkedList.cpp will store all the symbols from the SYMTAB into a linkedlist along with the rest of its data
+	such as its name, value/address, and flag. This linked list will assist in the printing of these symbols
+ 	in their appropriate locations. 
 		Each line of the object program is either a Header record, a Text record, a Modification record, or 
 	an End record.dasm_main.cpp will seperate these lines and get the necessary information from them such as the 
 	name of the program, its length, and its contents. The machine instructions are in the Text records and the program
@@ -34,7 +37,7 @@ Program Description:
 	will contain the listing of SIC/XE machine instructions of the <filename>.obj file. 
 	
 Compile instructions:
-	To compile the program, enter " make " in the directory that contains the files.
+	To compile the program, enter "make" in the directory that contains the files.
 	This will execute the makefile we have created for this program which will compile the
 	OpTab.cpp, findLabel.cpp, and dasm_main.cpp file for the user. The executable will be
 	'dasm'.
