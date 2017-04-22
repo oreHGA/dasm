@@ -6,102 +6,15 @@
 #include <cmath>
 #include "OpTab.h"
 #include "findLabel.h"
+#include "SymLinkedList.h"
 
 using namespace std;
 
-int char_to_int(char val){
-    if(val == '1')
-        return 1;
-    else if(val == '0')
-        return 0;    
-    else if( val == '2')
-        return 2;
-    else if( val == '3')
-        return 3;
-    else if( val == '4')
-        return 4;
-    else if( val == '5')
-        return 5;
-    else if( val == '6')
-        return 6;
-    else if( val == '7')
-        return 7;
-    else if( val == '8')
-        return 8;
-    else if( val == '9')
-        return 9;
-    else if( val == 'A')
-        return 10;
-    else if( val == 'B')
-        return 11;
-    else if( val == 'C')
-        return 12;
-    else if( val == 'D')
-        return 13;
-    else if( val == 'E')
-        return 14;
-    else if( val == 'F')
-        return 15;    
-}
-char int_to_char(int val){
-    if(val == 0)
-        return '0';
-    else if(val == 1)
-        return '1';
-    else if( val == 2)
-        return '2';
-    else if( val == 3)
-        return '3';
-    else if( val == 4)
-        return '4';
-    else if( val == 5)
-        return '5';
-    else if( val == 6)
-        return '6';
-    else if( val == 7)
-        return '7';
-    else if( val == 8)
-        return '8';
-    else if( val == 9)
-        return '9';
-    else if( val == 10)
-        return 'A';
-    else if( val == 11)
-        return 'B';
-    else if( val == 12)
-        return 'C';
-    else if( val == 13)
-        return 'D';
-    else if( val == 14)
-        return 'E';
-    else if( val == 15)
-        return 'F';    
-}
-// this is used to get the register name based onn its value     
-string get_register(char val){
-    switch(val){
-        case 0:
-            return "A";
-        case 1:
-            return "X";
-        case 2:
-            return "L";
-        case 3:
-            return "B";
-        case 4:
-            return "S";
-        case 5:
-            return "T";
-        case 6:
-            return "F";
-        case 8:
-            return "PC";
-        case 9:
-            return "SW";
-        default:
-            return "NOT VALID";
-    }
-}
+void printRES(string, int, int);
+int char_to_int(char);
+char int_to_char(int);
+string get_register(char);
+std::ofstream ofs;
 int  hex_to_int(string address,bool p = false){
     // so we first get the length of the address
     // and then, for every character in the address
@@ -127,8 +40,6 @@ int  hex_to_int(string address,bool p = false){
     }
     return value;
 }
-
-
 int main(int argc,char *argv[]){
     if(argc != 2){
         //throw an error if the program is not executed properly throw an error
@@ -143,9 +54,13 @@ int main(int argc,char *argv[]){
         obj.append(".obj"); // now we have filename.obj
         string sym = filename;
         sym.append(".sym");   // now we have filename.sym
+        string outfile_name = filename;
+        outfile_name.append(".sic");
 
         ifstream object_file(obj.c_str()); // object file ready
         ifstream symtab(sym.c_str()); // symtab ready 
+        
+        ofs.open (outfile_name.c_str(), std::ofstream::out | std::ofstream::trunc);
 
         // we check if we can open the files
         if( !symtab.is_open() || !object_file.is_open() ){
@@ -162,20 +77,17 @@ int main(int argc,char *argv[]){
             int start_address_val;
             string first_instruction;
             string line;
-            ofstream result_file;
             stringstream result_line;
             OpTab opTable;
             pair<string , string> opData;
             int index;
             int object_length;
+           
             while(getline(object_file,line)){
-                // cout<<line<< "\n";
                 // now we gonna process each line one by one 
-                int length = line.size();
                 int i = 0;
                 if(line.at(i) == 'H' ){
                     // we are in the header record now
-                    // cout<<"Header\n";
                     // next thing is to read the next 6 characters
                     string programname = line.substr(i+1,6) ;
                     result_line<<programname<<"\t"; // eventually we will have to write the name into the new file we are trying to create
@@ -184,8 +96,6 @@ int main(int argc,char *argv[]){
                     i = i+6;
                     string obj_length = line.substr(i+1,6);
                     object_length = hex_to_int(obj_length);
-                    cout<<object_length;
-                    // cout<< start_addr;
                     pair<string,int> first_label = searchSym(sym,start_addr);
                     first_instruction = first_label.first;
                     opData = opTable.getInstr(start_addr);
@@ -195,7 +105,7 @@ int main(int argc,char *argv[]){
                     result_line<<"START\t"<<start_addr<<"\n";
                     start_address_val = hex_to_int(start_addr);
                     prog_counter = start_address_val;  
-                    cout << result_line.str();
+                    ofs << result_line.str();
                     // write the resut line to the string
                     continue;
                 }
@@ -203,7 +113,6 @@ int main(int argc,char *argv[]){
                     if(i == 0){
                         index = i + 8;
                     }
-                    bool flag = true;
                     while(index+1 < line.length()){ 
                         stringstream loc_ss;
                         loc_ss << std::uppercase << hex <<  prog_counter;
@@ -400,19 +309,19 @@ int main(int argc,char *argv[]){
                             }
                             result_line.str(std::string());
                             result_line<<front_label.first<<"\t" << mnemonic << "\t"<<target_addr<<"\n";
-                            cout << result_line.str();
+                            ofs << result_line.str();
                             if( mnemonic.find("LDB") != std::string::npos ){
                                 result_line.str(std::string());
                                 result_line<<"      \t"<<"BASE\t"<<labelData.first<<"\n";
                                 base = target_addr_int;
-                                cout << result_line.str();
+                               ofs << result_line.str();
                             }
                             if( is_literal == true ){
                                 result_line.str(std::string());
                                 result_line<<"      \t"<<"LTORG\n";
                                 index = index +  (2 * labelData.second);
                                 prog_counter = prog_counter + labelData.second;
-                                cout<< result_line.str();
+                                ofs<< result_line.str();
                             }
                             target_addr.clear();
                         }
@@ -427,19 +336,156 @@ int main(int argc,char *argv[]){
                     loc_ss << std::uppercase << hex <<  prog_counter;
                     loc_ss >> loc_counter;
 
-                    
+                    printRES(sym, object_length, prog_counter);
 
                     result_line.str(std::string());
                     result_line <<"      \tEND\t"<<first_instruction<<endl;
-                    cout<< result_line.str();
+                    ofs<< result_line.str();
                     break;
                 }
             }
             object_file.close();
             symtab.close();
+            ofs.close();
             
         }   
     }
     // cout<<"Welcome back Captiain!I missed you\n";
     return 0;
+}
+int char_to_int(char val){
+    if(val == '1')
+        return 1;
+    else if(val == '0')
+        return 0;    
+    else if( val == '2')
+        return 2;
+    else if( val == '3')
+        return 3;
+    else if( val == '4')
+        return 4;
+    else if( val == '5')
+        return 5;
+    else if( val == '6')
+        return 6;
+    else if( val == '7')
+        return 7;
+    else if( val == '8')
+        return 8;
+    else if( val == '9')
+        return 9;
+    else if( val == 'A')
+        return 10;
+    else if( val == 'B')
+        return 11;
+    else if( val == 'C')
+        return 12;
+    else if( val == 'D')
+        return 13;
+    else if( val == 'E')
+        return 14;
+    else if( val == 'F')
+        return 15;    
+}
+char int_to_char(int val){
+    if(val == 0)
+        return '0';
+    else if(val == 1)
+        return '1';
+    else if( val == 2)
+        return '2';
+    else if( val == 3)
+        return '3';
+    else if( val == 4)
+        return '4';
+    else if( val == 5)
+        return '5';
+    else if( val == 6)
+        return '6';
+    else if( val == 7)
+        return '7';
+    else if( val == 8)
+        return '8';
+    else if( val == 9)
+        return '9';
+    else if( val == 10)
+        return 'A';
+    else if( val == 11)
+        return 'B';
+    else if( val == 12)
+        return 'C';
+    else if( val == 13)
+        return 'D';
+    else if( val == 14)
+        return 'E';
+    else if( val == 15)
+        return 'F';    
+}
+// this is used to get the register name based onn its value     
+string get_register(char val){
+    switch(val){
+        case 0:
+            return "A";
+        case 1:
+            return "X";
+        case 2:
+            return "L";
+        case 3:
+            return "B";
+        case 4:
+            return "S";
+        case 5:
+            return "T";
+        case 6:
+            return "F";
+        case 8:
+            return "PC";
+        case 9:
+            return "SW";
+        default:
+            return "NOT VALID";
+    }
+}
+void printRES(string fileName, int objLength, int progCounter){
+    Node *symlist = parseSym(fileName); 
+	Node *pointer = symlist;
+
+    int address, nextAddress, instrLengthBytes;
+
+    while(pointer != NULL){
+
+        address = hex_to_int(pointer->address);
+
+        if(address >= progCounter){
+            if(pointer->next != NULL){
+                nextAddress = hex_to_int(pointer->next->address);
+                instrLengthBytes = nextAddress - address;
+            }
+            else{
+                instrLengthBytes = objLength - address;
+            }
+            ofs << pointer->symbol << "\t";
+
+            if(instrLengthBytes == 1){
+                if(pointer->flag.compare("A") == 0){
+                    ofs << "BYTE\t1\n";
+                }else{
+                    ofs << "RESB\t1\n";
+                }
+                
+            }
+                
+            else{
+                int instrLengthWords = instrLengthBytes / 3;
+                if(pointer->flag.compare("A") == 0){
+                   ofs<< "WORD\t";
+                }else{
+                    ofs << "RESW\t";
+                }
+                ofs << instrLengthWords << endl;
+            }
+        }
+		pointer = pointer->next;
+	}
+
 }
