@@ -48,6 +48,8 @@ Operating instructions:
 	program will exit. 
 
 Design Decisions:
+	- We decided to print out LTORG immediately after we encoutered a literal
+	- We decided to print out the BASE directive immediately after a LDB instruction was encountered
 	- Program was written in C++ 
 	- Use of multiple files
 
