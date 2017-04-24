@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <iostream>
+
 using namespace std;
 
 /*inTab:
@@ -89,13 +90,13 @@ OpTab::OpTab(){
 pair<string, string> OpTab::getInstr(string op){
 	pair<string, string> dataPair;
 	instr i;
-	if (this->isInTable(op))
+	if (this->isInTable(op)){
 		i.data = mapTab.at(op);
-	else
-		cout << "ERROR: opcode not found; invalid for SIC/XE architecture." << endl;
-	
-	dataPair = std::make_pair(i.data.mnemonic, i.data.format);
-
+		dataPair = std::make_pair(i.data.mnemonic, i.data.format);
+	}
+	else{
+		dataPair = std::make_pair("NOT FOUND","NOT FOUND");
+	}
 	return dataPair;	
 }
 

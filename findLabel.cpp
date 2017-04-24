@@ -1,31 +1,21 @@
-#include<iostream>
-#include<fstream>
-#include<string>
-#include<sstream>
-using namespace std;
+//This only works with the Symbol table, not the Literal table, for now..Still working on that
+#include  "findLabel.h"
 
-
-//function declaration
- string searchSym(string fileName, string address);
- int main(){
-	
-	string fileName = "sample.sym";
-	string address = "000003"; //address has 6 characters
-	
-	string label = searchSym(fileName, address);
-	cout << "label: " << label << endl;
-	
-	return 0;
-	
-}
 //function that will open file (symtab) to search if an address matches a label
- string searchSym(string fileName, string address){
- 	//open symbol file
+
+pair<string, int> searchSym(string fileName, string address){
+ 	int addr_len = address.length();
+	 
+	if(addr_len < 6){
+		for(int i =0;i<6-(addr_len);i++){
+			address.insert(address.begin(),'0');
+		}
+	}
+
  	ifstream in(fileName.c_str());
 	if(!in){
 		cout << "Cannot open input file.\n";
 	}
-	
 	//getting all lines from file
 	char str[255];
 	string lines[255];
@@ -38,19 +28,101 @@ using namespace std;
 		}
 	}
 	in.close();
-	 //separating symbols and literals into separate arrays
+	
+	//getting only symbols
 	string symbols[index];
-	string literals[index];
-	int indexSym = 0;
+	int index2 = 0;
+	for(int i=0; i<index;i++){
+		string line = lines[i];
+		char letter = line[1];
+		if(letter >= 'A' && letter <= 'Z'){
+			symbols[index2] = lines[i];
+			index2++; //keeps track of elements in symbols array
+		}		
+	}
+	
+	//Splitting the symbol Name, Value, and Flag into separate arrays
+	string symbolName[index2];
+	string symbolValue[index2];
+	string symbolFlag[index2];
+	int counter = 0;
+	int index3 = 0;
+	string s = symbols[0];
+	string delimiter = " ";	
+	size_t pos = 0;
+	string token;
+	
+	for(int i = 0; i < index2; i++){
+		string s = symbols[i];
+		while((pos = s.find(delimiter)) !=string::npos){
+			token = s.substr(0, pos);
+			if(token.compare("")){
+				if(counter == 0){
+					symbolName[index3] = token;
+				}
+				if(counter == 1){
+					symbolValue[index3] = token;
+				}	
+			counter++;
+			}
+			s.erase(0, pos + delimiter.length());
+		}
+		symbolFlag[index3] = s;
+		counter = 0;
+		index3++;
+	}
+
+	int length;
+	for(int i = 0; i < index3; i++){
+		if(address.compare(symbolValue[i]) == 0){
+			stringstream ss;
+			ss <<  std::hex  << symbolValue[i];
+			ss >> length;
+			return std::make_pair(symbolName[i],length);
+		}
+	}
+
+	//separating literal information into different arrays
+	return std::make_pair("NOT FOUND",0);
+
+}
+
+pair<string,int> searchLit(string fileName, string address){
+	int addr_len = address.length();
+	if(addr_len < 6){
+		for(int i =0;i<6-(addr_len);i++){
+			address.insert(address.begin(),'0');
+		}
+	}
+	// cout << "The address is " << address<< endl;
+	ifstream in(fileName.c_str());
+	if(!in){
+		cout << "Cannot open input file.\n";
+	}
+	//getting all lines from file
+	char str[255];
+	string lines[255];
+	int index = 0;
+	while(in){
+		in.getline(str, 255);
+		if(in){
+			lines[index] = str;
+			index++;
+		}
+	}
+	in.close();
+	
+	//separting literals
 	int indexLit = 0;
+	string literals[index];
+	int index2 = 0;
 	for(int i=0; i<index;i++){
 		string line = lines[i];
 		char letter = line[1];//Labels are all in caps
 		if(!line.empty()){
 			//takes off significant markers for the symtab and littab
 			if(letter >= 'A' && letter <= 'Z'){
-				symbols[indexSym] = lines[i];
-				indexSym++; //keeps track of elements in symbols array
+				continue;
 			}
 			else if(!(letter >= 'a' && letter <= 'z') && letter != '-'){
 				literals[indexLit] = lines[i];
@@ -60,53 +132,17 @@ using namespace std;
 				
 	}
 	
-	//separating symbol information into different arrays
-	string symbolName[indexSym];
-	string symbolValue[indexSym];
-	string symbolFlag[indexSym];
-	//A symbol's name, value, and flag are linked by location in arrays
-	int index2=0;
-	int counter2 = 0;
-	for(int i = 0; i < indexSym; i++){
-		string s(symbols[i]);
-		istringstream iss(s);
-		do{
-			string sub;
-			iss >> sub;
-			if(counter2 == 0){
-				symbolName[index2] = sub;
-				counter2++;
-			}
-			else if(counter2 == 1){
-				symbolValue[index2] = sub;
-				counter2++;
-			}
-			else if(counter2 == 2){
-				symbolFlag[index2] = sub;
-				counter2++;
-			}
-			else{
-				counter2=0;
-				index2++;
-			}
-			
-		}while(iss);
-	}
 	
-	//check to see if address passed is the SYMTAB
-	for(int i = 0; i < index2;i++){
-		if(address.compare(symbolValue[i]) == 0){
-			return symbolValue[i];
-		}
-	}
-	
-	//separating literal information into different arrays
 	string literalName[indexLit];
 	string literalLength[indexLit];
 	string literalAddress[indexLit];
 	//a literal's name, length, and address are linked by location in arrays
 	int index3=0;
 	int counter3=0;
+	string s = literals[0];
+	string delimiter = " ";	
+	size_t pos = 0;
+	string token;
 	
 	for(int i = 0; i < indexLit; i++){
 		string s(literals[i]);
@@ -135,13 +171,23 @@ using namespace std;
 	}
 	
 	//checking to see if address passed is in the LITTAB
+	int length;
+	string label;
 	for(int i = 0; i < index3;i++){
 		if(address.compare(literalAddress[i]) == 0){
-			return literalName[i];
+			label = literalName[i];
+			if(literalName[i].at(1) == 'X'){
+				// CONVERT THE LENGTH TO int then perform some operation and then turn it back to string
+				stringstream i_val(literalLength[i]);
+				i_val >> length;
+				length = length / 2 ;
+			}
+			else if(literalName[i].at(1) == 'C'){
+				stringstream i_val(literalLength[i]);
+				i_val >> length;
+			}
+			return std::make_pair(label,length);
 		}
 	}
-	
-	//return 0 if address does not match any address in SYMTAB or LITTAB
-	return "0";
+	return std::make_pair("NOT FOUND",0);
 }
-
